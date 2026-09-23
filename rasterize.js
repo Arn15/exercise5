@@ -91,7 +91,7 @@ function setupWebGL() {
       if (gl == null) {
         throw "unable to create gl context -- is your browser gl ready?";
       } else {
-        gl.clearColor(0.0, 0.0, 0.0, 1.0); // use black when we clear the frame buffer
+        gl.clearColor(0.08, 0.08, 0.2, 1.0); // use dark navy when we clear the frame buffer
         gl.clearDepth(1.0); // use max when we clear the depth buffer
         gl.enable(gl.DEPTH_TEST); // use hidden surface removal (with zbuffering)
       }
@@ -159,8 +159,19 @@ function setupShaders() {
         varying vec3 vPos; // original vertex position, from vertex shader
 
         void main(void) {
-            // color by position: triangle turns warm yellow, square turns purple-blue
-            gl_FragColor = vec4(vPos.x * 2.0, vPos.y, 1.0 - vPos.y, 1.0);
+            // pick a color pair per shape: triangle (upper) vs square (lower)
+            vec3 colA, colB;
+            if (vPos.y > 0.5) {
+                colA = vec3(1.0, 0.3, 0.1);   // orange-red
+                colB = vec3(1.0, 0.9, 0.2);   // yellow
+            } else {
+                colA = vec3(0.1, 0.8, 0.9);   // cyan
+                colB = vec3(0.2, 0.3, 1.0);   // blue
+            }
+
+            // diagonal stripes in screen space
+            float s = step(0.5, fract((gl_FragCoord.x + gl_FragCoord.y) / 24.0));
+            gl_FragColor = vec4(mix(colA, colB, s), 1.0);
         }
     `;
     
@@ -173,10 +184,10 @@ function setupShaders() {
             vPos = vertexPosition; // pass original position to fragment shader
 
             vec3 p = vertexPosition * 2.0 - 1.0;     // map [0,1] world to [-1,1] clip
-            p.xy *= vec2(1.2, 0.9);                  // reshape: stretch x, squash y
-            float a = radians(20.0);                 // rotate 20 degrees CCW
+            p.x += 0.5;                              // move shapes to screen center
+            p.xy *= vec2(1.8, 1.2);                  // reshape: much wider, taller
+            float a = radians(90.0);                 // rotate 90 degrees CCW
             p.xy = mat2(cos(a), sin(a), -sin(a), cos(a)) * p.xy;
-            p.xy += vec2(0.4, 0.0);                  // move right
 
             gl_Position = vec4(p, 1.0);
         }
