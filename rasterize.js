@@ -155,17 +155,30 @@ function setupShaders() {
     
     // define fragment shader in essl using es6 template strings
     var fShaderCode = `
+        precision mediump float;
+        varying vec3 vPos; // original vertex position, from vertex shader
+
         void main(void) {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // all fragments are white
+            // color by position: triangle turns warm yellow, square turns purple-blue
+            gl_FragColor = vec4(vPos.x * 2.0, vPos.y, 1.0 - vPos.y, 1.0);
         }
     `;
     
     // define vertex shader in essl using es6 template strings
     var vShaderCode = `
         attribute vec3 vertexPosition;
+        varying vec3 vPos;
 
         void main(void) {
-            gl_Position = vec4(vertexPosition, 1.0); // use the untransformed position
+            vPos = vertexPosition; // pass original position to fragment shader
+
+            vec3 p = vertexPosition * 2.0 - 1.0;     // map [0,1] world to [-1,1] clip
+            p.xy *= vec2(1.2, 0.9);                  // reshape: stretch x, squash y
+            float a = radians(20.0);                 // rotate 20 degrees CCW
+            p.xy = mat2(cos(a), sin(a), -sin(a), cos(a)) * p.xy;
+            p.xy += vec2(0.4, 0.0);                  // move right
+
+            gl_Position = vec4(p, 1.0);
         }
     `;
     
